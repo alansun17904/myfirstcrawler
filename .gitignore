@@ -1,0 +1,11 @@
+# PyCharm configs
+*.idea
+.idea/workspace.xml
+
+# PyTest cache
+*.pytest_cache
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
