@@ -1,8 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import os
 from pprint import pprint
+import logging
 import json
+import time
 
 
 class Ticker:
@@ -30,7 +33,7 @@ class Ticker:
                             }}
 
     @staticmethod
-    def make_soup(ticker):
+    def make_soup(ticker: str):
         r = requests.get("https://www.investopedia.com/markets/stocks/" + ticker + '/')  # download inital request
         if r.status_code == 404:  # check status code, for errors and report
             print("Invalid Ticker.")
@@ -46,55 +49,55 @@ class Ticker:
             return ''
 
     def get_ticker_data(self):
-        self.data['data']['close'] = float(self._soup.find(id='quotePrice').string)
-        change_match = re.search(r'(.*)\((.*)%\)$', self._soup.find(id='quoteChange').string)
-        self.data['data']['change-amount'] = round(float(change_match.group(1)), 2)
-        self.data['data']['change-percent'] = round(float(change_match.group(2)), 2)
-        self.data['data']['date'] = self._soup.find(id='quoteDate').string.strip()
-        self.data['data']['prev-close'] = round(float(self._soup.find(id='quotePreviousClose').string), 2)
-        self.data['data']['open'] = round(float(self._soup.find(id='quoteOpen').string), 2)
-        self.data['data']['dayrange'] = self._soup.find(id='quoteDayRange').string.strip()
-        self.data['data']['volume'] = int(self._soup.find(id='quoteVolume').string.strip().replace(',', '').split('.')[0])
+        try:
+            self.data['data']['close'] = float(self._soup.find(id='quotePrice').string)
+            change_match = re.search(r'(.*)\((.*)%\)$', self._soup.find(id='quoteChange').string)
+            self.data['data']['change-amount'] = round(float(change_match.group(1)), 2)
+            self.data['data']['change-percent'] = round(float(change_match.group(2)), 2)
+            self.data['data']['date'] = self._soup.find(id='quoteDate').string.strip()
+            self.data['data']['prev-close'] = round(float(self._soup.find(id='quotePreviousClose').string), 2)
+            self.data['data']['open'] = round(float(self._soup.find(id='quoteOpen').string), 2)
+            self.data['data']['dayrange'] = self._soup.find(id='quoteDayRange').string.strip()
+            self.data['data']['volume'] = int(self._soup.find(id='quoteVolume').string.strip().replace(',', '').split('.')[0])
 
-        # stuff that does not have an id for some reason, search for all tags that don't have attribute id
-        # then filters through tags that have the data-type attr, it returns a lot of random stuff but we only
-        # want the first 6
+            # stuff that does not have an id for some reason, search for all tags that don't have attribute id
+            # then filters through tags that have the data-type attr, it returns a lot of random stuff but we only
+            # want the first 6
 
-        id_filter = lambda t: t.has_attr('class') and t['class'] == ['num'] and not \
-            (t.has_attr('id') or t.has_attr('data-type'))
+            id_filter = lambda t: t.has_attr('class') and t['class'] == ['num'] and not \
+                (t.has_attr('id') or t.has_attr('data-type'))
 
-        all_tags = [v.string.strip() for v in self._soup.find_all('td') if id_filter(v)][:6]
+            all_tags = [v.string.strip() for v in self._soup.find_all('td') if id_filter(v)][:6]
 
-        self.data['data']['52wrange'] = all_tags[0]
-        self.data['data']['pe'] = float(all_tags[1])
-        self.data['data']['beta'] = float(all_tags[2])
+            self.data['data']['52wrange'] = all_tags[0]
+            self.data['data']['pe'] = float(all_tags[1])
+            self.data['data']['beta'] = float(all_tags[2])
 
-        if all_tags[3] == '-':
-            self.data['data']['div-yield'] = None
-        else:
-            self.data['data']['div-yield'] = all_tags[3]
+            if all_tags[3] == '-':
+                self.data['data']['div-yield'] = None
+            else:
+                self.data['data']['div-yield'] = all_tags[3]
 
-        self.data['data']['market-cap'] = all_tags[4]
-        self.data['data']['eps'] = float(all_tags[5])
+            self.data['data']['market-cap'] = all_tags[4]
+            self.data['data']['eps'] = float(all_tags[5])
 
-        return self.data
+            return self.data
+        except:  # None type errors, any type of connection errors or invalid ticker errors.
+            logging.warning("Get Ticker Data Error")
+            return
 
 
 if __name__ == '__main__':
-    mu = Ticker("MU")
-    baba = Ticker("BABA")
-    msft = Ticker("MSFT")
-    apple = Ticker("AAPL")
+    os.chdir("../data")
+    with open("tickers.txt", "r") as f:
+        monitored_tickers = f.read().splitlines()
+    f.close()
 
-    mu.get_ticker_data()
-    baba.get_ticker_data()
-    apple.get_ticker_data()
-    msft.get_ticker_data()
-
-    pprint(mu.data)
-    print('-'*80)
-    pprint(apple.data)
-    print('-' * 80)
-    pprint(msft.data)
-    print('-' * 80)
-    pprint(baba.data)
+    times = []
+    for _ in range(20):
+        for tickers in monitored_tickers:
+            start = time.time()
+            Ticker(tickers).get_ticker_data()
+            end = time.time()
+            times.append(end-start)
+    print(sum(times)/len(times))

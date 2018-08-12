@@ -9,3 +9,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Excel Stuff
+~$stock_tickers.xlsx
