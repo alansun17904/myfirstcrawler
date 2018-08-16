@@ -45,7 +45,7 @@ class Ticker:
         try:
             return self._soup.title.string[:-23].split('-')[1].strip()
         except IndexError:
-            print("Invalid Ticker.")
+            print("Invalid ticker name.")
             return ''
 
     def get_ticker_data(self):
@@ -88,7 +88,7 @@ class Ticker:
 
 
 if __name__ == '__main__':
-    os.chdir("../data")
+    os.chdir("/data")
     with open("tickers.txt", "r") as f:
         monitored_tickers = f.read().splitlines()
     f.close()

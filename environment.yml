@@ -1,0 +1,13 @@
+name: financepy
+channels:
+  - default
+dependencies:
+  - python=3.6
+  - requests
+  - pandas
+  - numpy
+  - bs4
+  - asyncio=3.4.3=py36_0
+  - xlrd
+  - gevent
+
